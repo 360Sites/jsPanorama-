@@ -72,6 +72,8 @@ $data = include ('menu.php');
 <script src="js/Detector.js"></script>
 <script src="js/three.min.js"></script>
 
+<script src="js/roomTransition.js"></script>
+
 <script src="js/application.js"></script>
 <script src="js/pointevent.js"></script>
 </html>
