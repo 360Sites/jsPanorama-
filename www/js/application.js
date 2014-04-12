@@ -1,3 +1,4 @@
+var RoomTransition = RoomTransition || {};
 var PANORAMA = (function(w, d){
 
     var camera,
@@ -31,6 +32,14 @@ var PANORAMA = (function(w, d){
     var emptyMap = THREE.ImageUtils.loadTexture( "img/icons/empty.png" );
     var pointTexture = { 'img/icons/empty.png' : THREE.ImageUtils.loadTexture('img/icons/empty.png')};
 	var clock = new THREE.Clock();
+
+    //////Room Transition Control//////
+    var roomTransitionName = "Alpha",
+        nextRoomIndex = 0,
+        changeRoom = true;
+        workRoomTransitionIN = false,
+        workRoomTransitionOUT = false;
+    ///////////////////////////////////
 
     window.onresize = function(event) {
         WINDOW_WIDTH = window.innerWidth;
@@ -142,7 +151,7 @@ var PANORAMA = (function(w, d){
 		// CUSTOM //
 		////////////
 		
-		var particleTexture = THREE.ImageUtils.loadTexture( 'img/spark.jpg' );
+		var particleTexture = THREE.ImageUtils.loadTexture( 'img/spark.png' );
 
 		particleGroup = new THREE.Object3D();
 		particleAttributes = { startSize: [], startPosition: [], randomness: [] };
@@ -247,6 +256,19 @@ var PANORAMA = (function(w, d){
         }
         // mesh.rotation.x += 0.01;
         // mesh.rotation.y += 0.02;
+
+        if(workRoomTransitionIN) {
+            workRoomTransitionIN = RoomTransition['in'+roomTransitionName](mesh);
+            changeRoom = !workRoomTransitionIN;
+        }
+
+        if(workRoomTransitionOUT) {
+            workRoomTransitionOUT = RoomTransition['out'+roomTransitionName](mesh);
+        }
+        if(changeRoom) {
+            changeSphereMaterial();
+        }
+
 		renderParticleAnimation();
         render();
 		
@@ -411,7 +433,7 @@ var PANORAMA = (function(w, d){
     }());
 
     function actionRerender(num) {
-
+        nextRoomIndex = num;
         loaded = false;
         d.querySelector('.loader').style.display = 'block';
         container.style.opacity = 0;
@@ -419,29 +441,52 @@ var PANORAMA = (function(w, d){
 
         var object = globalData[num],
             sphereMaterial;
+        changeRoom = true;
+        if(roomTransitionName) {
+            workRoomTransitionIN = true;
+            changeRoom = false;
+        }
 
         if (sphereMaterialCache[object.name] === undefined) {
+            loaded = true;
             sphereMaterial = new THREE.MeshBasicMaterial({
-                map: THREE.ImageUtils.loadTexture(globalData[num].texture)
+                map: THREE.ImageUtils.loadTexture(globalData[num].texture,new THREE.UVMapping(),function(){
+                    loaded = false;
+                    if(changeRoom) {
+                        changeSphereMaterial();
+                    }
+                })
                 //side: THREE.BackSide
             });
             sphereMaterialCache[object.name] = sphereMaterial;
         }
-
-        mesh.material = sphereMaterialCache[object.name];
-
-        for (var i = 0; i < meshes.length; i++) {
-            scene.remove(meshes[i]);
+        if(changeRoom && !loaded) {
+            changeSphereMaterial();
         }
+    }
+    function changeSphereMaterial() {
+        var object = globalData[nextRoomIndex];
+        if( sphereMaterialCache[object.name] != undefined) {
 
-        // Чистим Кэш точек
-        meshes = [];
+            mesh.material = sphereMaterialCache[object.name];
 
-        renderPoints(object.points);
+            for (var i = 0; i < meshes.length; i++) {
+                scene.remove(meshes[i]);
+            }
 
-        //Ставим камеру по умолчанию
-        lon = (object.lon) ? (object.lon) : 0;
-        lat = 0;
+            // Чистим Кэш точек
+            meshes = [];
+
+            renderPoints(object.points);
+
+            //Ставим камеру по умолчанию
+            lon = (object.lon) ? (object.lon) : 0;
+            lat = 0;
+            if(roomTransitionName) {
+                workRoomTransitionOUT = true;
+            }
+            changeRoom = false;
+        }
     }
 
     function renderMenu() {

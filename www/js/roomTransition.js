@@ -1,15 +1,21 @@
 var RoomTransition = (function(){
 
-    function inAlfa(panorama) {
-
+    function inAlpha(panorama) {
+        if(panorama.scale.x >= 0) return false;
+        panorama.scale.x += 0.01;
+        //panorama.material.opacity -= 0.01;
+        return true;
     }
-    function outAlfa (panorama) {
+    function outAlpha (panorama) {
+        if(panorama.scale.x <= -1) return false;
+        panorama.scale.x -= 0.01;
 
+        return true;
     }
 
 
     return {
-        inAlfa : inAlfa,
-        outAlfa : outAlfa
+        inAlpha : inAlpha,
+        outAlpha : outAlpha
     };
 })();
