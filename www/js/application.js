@@ -106,6 +106,7 @@ var PANORAMA = (function(w, d){
         }
 
         renderPoints(firstScene.points);
+        panoramaAnimation(true);
 
 
 
@@ -123,7 +124,7 @@ var PANORAMA = (function(w, d){
 
 
         d.addEventListener( 'mouseup', onDocumentMouseUp, false);
-        // container.addEventListener( 'dblclick', onDocumentMouseDblclick, false);
+        container.addEventListener( 'dblclick', onDocumentMouseDblclick, false);
     }
 
     function renderPoints(points) {
@@ -230,40 +231,43 @@ var PANORAMA = (function(w, d){
 		//stats.update();
 	}
 
-    /*  function onDocumentMouseDblclick(event) {
+    function onDocumentMouseDblclick(event) {
 
-     event.preventDefault();
+        event.preventDefault();
 
-     var vector = new THREE.Vector3( mouse.x, mouse.y, 1 );
-     projector.unprojectVector( vector, camera );
-     raycaster.set( camera.position, vector.sub( camera.position ).normalize() );
-     var intersects = raycaster.intersectObjects( scene.children );
+        var vector = new THREE.Vector3(mouse.x, mouse.y, 1);
+        projector.unprojectVector(vector, camera);
+        console.log("'x'=> " + vector.x + ",\n'y'=> " + vector.y + ",\n'z'=> " + vector.z);
+        /*raycaster.set(camera.position, vector.sub(camera.position).normalize());
+        var intersects = raycaster.intersectObjects(scene.children);
 
-     if ( intersects.length == 1 ) {
-     var sprite = new THREE.Mesh( new THREE.PlaneGeometry(35, 35), new THREE.MeshPhongMaterial({map: pointTexture[0], transparent:false }));
+        if (intersects.length == 1) {
+            var sprite = new THREE.Mesh(new THREE.PlaneGeometry(35, 35), new THREE.MeshPhongMaterial({map: pointTexture[0], transparent: false }));
 
-     //ставим позиции чуть ближе к камере
-     sprite.position.x = intersects[0].point.x *0.99;
-     sprite.position.y = intersects[0].point.y *0.99;
-     sprite.position.z = intersects[0].point.z *0.99;
-     sprite.data = {};
-     sprite.lookAt( camera.position );
-     // console.log(sprite.position);
-     console.log( "'x'=> "+sprite.position.x+",/n 'y'=> "+sprite.position.y+",/n 'z'=>"+sprite.position.z+"" );
-     scene.add( sprite );
-     meshes.push( sprite );
-     }
-     }
-     */
+            //ставим позиции чуть ближе к камере
+            sprite.position.x = intersects[0].point.x * 0.99;
+            sprite.position.y = intersects[0].point.y * 0.99;
+            sprite.position.z = intersects[0].point.z * 0.99;
+            sprite.data = {};
+            sprite.lookAt(camera.position);
+            // console.log(sprite.position);
+            console.log("'x'=> " + sprite.position.x + ",/n 'y'=> " + sprite.position.y + ",/n 'z'=>" + sprite.position.z + "");
+            scene.add(sprite);
+            meshes.push(sprite);
+        }*/
+    }
+
 
     function animate() {
         requestAnimationFrame( animate );
-        if ( !isUserInteracting && !isHoverPoint ) {
+
+        updatePanoramaAnimation();
+        //if ( !isUserInteracting && !isHoverPoint ) {
             // fov -= 0.1;
             // camera.projectionMatrix.makePerspective( fov, WINDOW_WIDTH / WINDOW_HEIGHT, 1, 1100 );
-            lon += 0.04;
+          //  lon += 0.04;
             // lat = ;
-        }
+        //}
         // mesh.rotation.x += 0.01;
         // mesh.rotation.y += 0.02;
 
@@ -271,10 +275,10 @@ var PANORAMA = (function(w, d){
             workRoomTransitionIN = RoomTransition['in'+roomTransitionName](mesh);
             changeRoom = !workRoomTransitionIN;
         }
-
         if(workRoomTransitionOUT) {
             workRoomTransitionOUT = RoomTransition['out'+roomTransitionName](mesh);
         }
+
         if(changeRoom) {
             changeSphereMaterial();
         }
@@ -282,8 +286,9 @@ var PANORAMA = (function(w, d){
 		renderParticleAnimation();
 
         render();
+
         updateParticleEffect();
-		
+
     }
 
     function render() {
@@ -558,6 +563,7 @@ var PANORAMA = (function(w, d){
         event.preventDefault();
 
         isUserInteracting = true;
+        panoramaAnimation(false);
 
         onPointerDownPointerX = event.clientX;
         onPointerDownPointerY = event.clientY;
@@ -611,6 +617,7 @@ var PANORAMA = (function(w, d){
     function onDocumentMouseUp( event ) {
 
         isUserInteracting = false;
+        panoramaAnimation(true,3000);
 
 
         var intersects = raycaster.intersectObjects( meshes );
@@ -658,7 +665,35 @@ var PANORAMA = (function(w, d){
         render();
     }
 
-    /******** event manager ******/
+    /*======== Panorama Animation ========*/
+    var workPanoramaAnimation = false,
+        panoramaAnimationRestartTimer,
+        panoramaAnimationDelta = 0.04;
+    function panoramaAnimation(on, timeout) {
+        if(panoramaAnimationRestartTimer) {
+            clearTimeout(panoramaAnimationRestartTimer);
+        }
+        if(timeout != undefined && timeout > 0 ) {
+            panoramaAnimationRestartTimer = setTimeout(function() {
+                panoramaAnimationDelta = 0;
+                panoramaAnimation(on);
+            },timeout);
+        }else{
+            workPanoramaAnimation = on;
+        }
+    }
+    function updatePanoramaAnimation() {
+        if(workPanoramaAnimation) {
+            if(panoramaAnimationDelta < 0.04) {
+                panoramaAnimationDelta += 0.0002;
+            }
+            //console.log(panoramaAnimationDelta);
+            lon += panoramaAnimationDelta;
+        }
+    }
+    /*======== end Panorama Animation ========*/
+
+    /*======== event manager ========*/
     var eventList={};
     function runEvent() {
         if(arguments.length){
@@ -679,9 +714,9 @@ var PANORAMA = (function(w, d){
         }
         eventList[eventName].push(callBack);
     }
-    /******** end event manager ******/
+    /*======== end event manager ========*/
 
-    /*======== particleEffect ==========*/
+    /*======== particleEffect ========*/
     function startParticleEffect(obj) {
         isWorkParticleEngine = false;
         if(obj.particleEffect && ParticleEffects[obj.particleEffect] != undefined) {
@@ -703,7 +738,7 @@ var PANORAMA = (function(w, d){
             particleEngine.update( dt * 0.5 );
         }
     }
-    /*======== END particleEffect ==========*/
+    /*======== END particleEffect ========*/
 
     return {
         onMousePointMove: function (callBack){ addEvent('onMousePointMove',callBack) },
