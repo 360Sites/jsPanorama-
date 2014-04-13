@@ -1,4 +1,5 @@
 var RoomTransition = RoomTransition || {};
+var ParticleEffects = ParticleEffects || {};
 var PANORAMA = (function(w, d){
 
     var camera,
@@ -39,6 +40,9 @@ var PANORAMA = (function(w, d){
         changeRoom = true;
         workRoomTransitionIN = false,
         workRoomTransitionOUT = false;
+    //////Particle Effect ////////////
+    var particleEngine,
+        isWorkParticleEngine = false;
     ///////////////////////////////////
 
     window.onresize = function(event) {
@@ -62,10 +66,12 @@ var PANORAMA = (function(w, d){
     }).done(init).done([animate, renderMenu]);
 
     function init() {
-
         var container,
             canvas,
             firstScene = globalData[0];
+
+
+
 
         if(firstScene.lon){
             lon = firstScene.lon;
@@ -79,10 +85,13 @@ var PANORAMA = (function(w, d){
         scene         = new THREE.Scene();
         raycaster     = new THREE.Raycaster();
         renderer      = new THREE.WebGLRenderer();
+        //renderer      = new THREE.CanvasRenderer();
         renderer.setSize( WINDOW_WIDTH, WINDOW_HEIGHT );
 
         renderSphere(firstScene);
 		renderParticle();
+        startParticleEffect(firstScene);
+
 
         for(var i=0; i< firstScene.points.length; i++) {
             if (pointTexture[firstScene.points[i].icons.img_def] === undefined) {
@@ -135,7 +144,8 @@ var PANORAMA = (function(w, d){
 
         var sphere_geometry = new THREE.SphereGeometry( 500, 60, 40 ),
             sphere_material = new THREE.MeshBasicMaterial({
-                map: THREE.ImageUtils.loadTexture( data.texture )
+                map: THREE.ImageUtils.loadTexture( data.texture ),
+                overdraw: true
                 //side: THREE.BackSide
             });
         var normal = new THREE.MeshNormalMaterial();
@@ -160,7 +170,7 @@ var PANORAMA = (function(w, d){
 		var radiusRange = 50;
 		for( var i = 0; i < totalParticles; i++ ) 
 		{
-			var spriteMaterial = new THREE.SpriteMaterial( { map: particleTexture, useScreenCoordinates: false, color: 0xffffff } );
+			var spriteMaterial = new THREE.SpriteMaterial( { map: particleTexture, useScreenCoordinates: false, color: 0xffffff, overdraw: true } );
 			
 			var sprite = new THREE.Sprite( spriteMaterial );
 			sprite.scale.set( 32, 32, 1.0 ); // imageWidth, imageHeight
@@ -270,7 +280,9 @@ var PANORAMA = (function(w, d){
         }
 
 		renderParticleAnimation();
+
         render();
+        updateParticleEffect();
 		
     }
 
@@ -434,9 +446,12 @@ var PANORAMA = (function(w, d){
 
     function actionRerender(num) {
         nextRoomIndex = num;
+        stopParticleEffect();
         loaded = false;
         d.querySelector('.loader').style.display = 'block';
         container.style.opacity = 0;
+
+
 
 
         var object = globalData[num],
@@ -485,6 +500,7 @@ var PANORAMA = (function(w, d){
             if(roomTransitionName) {
                 workRoomTransitionOUT = true;
             }
+            startParticleEffect(object);
             changeRoom = false;
         }
     }
@@ -665,6 +681,30 @@ var PANORAMA = (function(w, d){
     }
     /******** end event manager ******/
 
+    /*======== particleEffect ==========*/
+    function startParticleEffect(obj) {
+        isWorkParticleEngine = false;
+        if(obj.particleEffect && ParticleEffects[obj.particleEffect] != undefined) {
+            particleEngine = new ParticleEngine();
+            particleEngine.setValues(ParticleEffects[obj.particleEffect]);
+            particleEngine.initialize();
+            isWorkParticleEngine = true;
+        }
+    }
+    function stopParticleEffect() {
+        if(isWorkParticleEngine) {
+            isWorkParticleEngine = false;
+            particleEngine.destroy();
+        }
+    }
+    function updateParticleEffect() {
+        if(isWorkParticleEngine) {
+            var dt = clock.getDelta();
+            particleEngine.update( dt * 0.5 );
+        }
+    }
+    /*======== END particleEffect ==========*/
+
     return {
         onMousePointMove: function (callBack){ addEvent('onMousePointMove',callBack) },
         onMousePointIn: function (callBack){ addEvent('onMousePointIn',callBack) },
@@ -673,12 +713,14 @@ var PANORAMA = (function(w, d){
         onMousePointUp: function (callBack){ addEvent('onMousePointUp',callBack) },
         onMousePointClick: function (callBack){ addEvent('onMousePointClick',callBack) },
 
-        showeAt: actionRerender
+        showAt: actionRerender,
+
+        scene: function() {return scene; }
     };
 })(this, this.document);
 jQuery(document).ready(function(){
     jQuery('[data-toggle="panorama"]').click(function(){
         var index = parseInt($(this).data('panorama-index'));
-        PANORAMA.showeAt(index);
+        PANORAMA.showAt(index);
     });
 });

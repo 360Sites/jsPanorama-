@@ -279,6 +279,7 @@ return array(
     array(
         'texture'=>"img/_1.jpg",
         'name'=>"Room 1",
+        'particleEffect' => "snow",
         'points'=>array()
     ),
     array(

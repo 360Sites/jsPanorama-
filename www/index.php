@@ -73,6 +73,8 @@ $data = include ('menu.php');
 <script src="js/three.min.js"></script>
 
 <script src="js/roomTransition.js"></script>
+<script src="js/particle-engine.js"></script>
+<script src="js/particle-effects.js"></script>
 
 <script src="js/application.js"></script>
 <script src="js/pointevent.js"></script>
